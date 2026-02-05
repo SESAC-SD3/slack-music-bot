@@ -11,6 +11,7 @@ services:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
       - DEFAULT_VIDEO_URL=${DEFAULT_VIDEO_URL:-https://www.youtube.com/watch?v=jfKfPfyJRdk}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy

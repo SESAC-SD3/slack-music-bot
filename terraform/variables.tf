@@ -39,6 +39,13 @@ variable "default_video_url" {
   default     = "https://www.youtube.com/watch?v=jfKfPfyJRdk"
 }
 
+variable "youtube_api_key" {
+  description = "YouTube Data API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Domain
 variable "domain_name" {
   description = "Root domain name"

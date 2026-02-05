@@ -28,6 +28,7 @@ public class SongServiceImpl implements SongService {
     private final SongRepository songRepository;
     private final PlayerStateRepository playerStateRepository;
     private final PlayerWebSocketHandler webSocketHandler;
+    private final YouTubeService youTubeService;
 
     @Value("${musicbot.default-video-url}")
     private String defaultVideoUrl;
@@ -47,8 +48,11 @@ public class SongServiceImpl implements SongService {
         Integer maxOrderIndex = songRepository.findMaxOrderIndex();
         int newOrderIndex = maxOrderIndex + 1;
 
+        // YouTube API로 제목 가져오기
+        String title = youTubeService.getVideoTitle(videoId);
+
         Song song = Song.builder()
-                .title("YouTube Video") // 실제로는 YouTube API로 제목을 가져올 수 있음
+                .title(title)
                 .videoId(videoId)
                 .thumbnailUrl("https://img.youtube.com/vi/" + videoId + "/mqdefault.jpg")
                 .addedBy(request.getAddedBy())

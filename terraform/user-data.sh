@@ -32,6 +32,7 @@ cat > .env << 'EOF'
 SLACK_BOT_TOKEN=${slack_bot_token}
 SLACK_SIGNING_SECRET=${slack_signing_secret}
 DEFAULT_VIDEO_URL=${default_video_url}
+YOUTUBE_API_KEY=${youtube_api_key}
 EOF
 
 # Create docker-compose.yml
@@ -49,6 +50,7 @@ services:
       - SLACK_BOT_TOKEN=$${SLACK_BOT_TOKEN}
       - SLACK_SIGNING_SECRET=$${SLACK_SIGNING_SECRET}
       - DEFAULT_VIDEO_URL=$${DEFAULT_VIDEO_URL}
+      - YOUTUBE_API_KEY=$${YOUTUBE_API_KEY}
     depends_on:
       db:
         condition: service_healthy

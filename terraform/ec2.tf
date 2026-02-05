@@ -14,6 +14,7 @@ resource "aws_instance" "app" {
     slack_bot_token      = var.slack_bot_token
     slack_signing_secret = var.slack_signing_secret
     default_video_url    = var.default_video_url
+    youtube_api_key      = var.youtube_api_key
     domain_name          = "${var.subdomain}.${var.domain_name}"
   }))
 
