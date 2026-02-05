@@ -121,6 +121,11 @@ public class PlayerServiceImpl implements PlayerService {
         PlayerState state = getOrCreatePlayerState();
         state.updateDefaultVideoUrl(youtubeUrl);
 
+        // 플레이리스트가 비어있으면 바로 기본 영상 재생
+        if (state.getCurrentSongId() == null && songService.countUnplayedSongs() == 0) {
+            webSocketHandler.sendCommand("playDefault", videoId);
+        }
+
         return buildResponse(state);
     }
 

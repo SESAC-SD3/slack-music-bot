@@ -665,10 +665,21 @@
 
         function setDefaultVideo() {
             const url = document.getElementById('defaultVideoUrl').value;
+            if (!url) {
+                alert('YouTube URL을 입력해주세요.');
+                return;
+            }
             fetch('/api/player/default-video', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ youtubeUrl: url })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('기본 영상이 저장되었습니다.');
+                } else {
+                    alert('저장에 실패했습니다.');
+                }
             });
         }
 
