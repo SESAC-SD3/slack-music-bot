@@ -15,7 +15,7 @@ public class PlayerController {
     private final PlayerService playerService;
     private final SongService songService;
 
-    @GetMapping({"/", "/player"})
+    @GetMapping("/")
     public String player(Model model) {
         PlayerStateResponse state = playerService.getState();
         model.addAttribute("state", state);
