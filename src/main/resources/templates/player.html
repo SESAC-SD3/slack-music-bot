@@ -568,6 +568,7 @@
                     }
                     isPlaying = true;
                     updatePlayButton();
+                    fetchAndUpdateNowPlaying();
                     break;
                 case 'pause':
                     player.pauseVideo();
@@ -581,6 +582,7 @@
                     }
                     isPlaying = true;
                     updatePlayButton();
+                    updateNowPlaying(null);
                     break;
                 case 'volume':
                     player.setVolume(parseInt(data));
@@ -592,8 +594,21 @@
                     break;
                 case 'playlistUpdated':
                     refreshPlaylist();
+                    fetchAndUpdateNowPlaying();
                     break;
             }
+        }
+
+        function fetchAndUpdateNowPlaying() {
+            fetch('/api/player/state')
+                .then(response => response.json())
+                .then(state => {
+                    if (state.currentSong) {
+                        updateNowPlaying(state.currentSong);
+                    } else {
+                        updateNowPlaying(null);
+                    }
+                });
         }
 
         function refreshPlaylist() {
