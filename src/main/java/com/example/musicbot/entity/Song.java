@@ -31,6 +31,8 @@ public class Song extends BaseEntity {
 
     private boolean played;
 
+    private boolean deleted;
+
     @Builder
     public Song(String title, String videoId, String thumbnailUrl, String addedBy, Integer orderIndex) {
         this.title = title;
@@ -39,10 +41,15 @@ public class Song extends BaseEntity {
         this.addedBy = addedBy;
         this.orderIndex = orderIndex;
         this.played = false;
+        this.deleted = false;
     }
 
     public void markAsPlayed() {
         this.played = true;
+    }
+
+    public void markAsDeleted() {
+        this.deleted = true;
     }
 
     public void updateOrderIndex(Integer orderIndex) {

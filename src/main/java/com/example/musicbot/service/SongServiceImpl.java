@@ -43,7 +43,7 @@ public class SongServiceImpl implements SongService {
         String videoId = extractVideoId(request.getYoutubeUrl());
 
         // 추가 전 재생 대기 중인 곡이 있는지 확인
-        boolean wasEmpty = songRepository.countByPlayedFalse() == 0;
+        boolean wasEmpty = songRepository.countByPlayedFalseAndDeletedFalse() == 0;
 
         Integer maxOrderIndex = songRepository.findMaxOrderIndex();
         int newOrderIndex = maxOrderIndex + 1;
@@ -77,14 +77,14 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public List<SongResponse> getAllSongs() {
-        return songRepository.findAllByOrderByOrderIndexAsc().stream()
+        return songRepository.findByDeletedFalseOrderByOrderIndexAsc().stream()
                 .map(SongResponse::from)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<SongResponse> getUnplayedSongs() {
-        return songRepository.findByPlayedFalseOrderByOrderIndexAsc().stream()
+        return songRepository.findByPlayedFalseAndDeletedFalseOrderByOrderIndexAsc().stream()
                 .map(SongResponse::from)
                 .collect(Collectors.toList());
     }
@@ -111,7 +111,8 @@ public class SongServiceImpl implements SongService {
     @Transactional
     public void deleteSong(Long songId) {
         Song song = findById(songId);
-        songRepository.delete(song);
+        song.markAsDeleted();
+        songRepository.save(song);
 
         // 플레이리스트 UI 업데이트
         webSocketHandler.sendCommand("playlistUpdated", null);
@@ -119,7 +120,7 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public SongResponse getNextSong() {
-        return songRepository.findFirstByPlayedFalseOrderByOrderIndexAsc()
+        return songRepository.findFirstByPlayedFalseAndDeletedFalseOrderByOrderIndexAsc()
                 .map(SongResponse::from)
                 .orElse(null);
     }
@@ -134,7 +135,7 @@ public class SongServiceImpl implements SongService {
 
     @Override
     public long countUnplayedSongs() {
-        return songRepository.countByPlayedFalse();
+        return songRepository.countByPlayedFalseAndDeletedFalse();
     }
 
     private String extractVideoId(String url) {
