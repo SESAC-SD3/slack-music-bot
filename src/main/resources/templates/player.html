@@ -179,7 +179,6 @@
             flex-shrink: 0;
         }
 
-        .add-song-section,
         .default-video-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -187,7 +186,6 @@
             flex: 1;
         }
 
-        .add-song-section h3,
         .default-video-section h3 {
             font-size: 13px;
             color: #888;
@@ -377,14 +375,6 @@
                 </div>
 
                 <div class="settings-section">
-                    <div class="add-song-section">
-                        <h3>곡 추가</h3>
-                        <div class="input-group">
-                            <input type="text" id="addSongUrl" placeholder="YouTube URL">
-                            <button onclick="addSong()">추가</button>
-                        </div>
-                    </div>
-
                     <div class="default-video-section">
                         <h3>기본 영상</h3>
                         <div class="input-group">
@@ -679,27 +669,6 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ youtubeUrl: url })
-            });
-        }
-
-        function addSong() {
-            const url = document.getElementById('addSongUrl').value;
-            if (!url) {
-                alert('YouTube URL을 입력해주세요.');
-                return;
-            }
-            fetch('/api/songs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ youtubeUrl: url, addedBy: 'Web Player' })
-            })
-            .then(response => {
-                if (response.ok) {
-                    document.getElementById('addSongUrl').value = '';
-                    refreshPlaylist();
-                } else {
-                    alert('곡 추가에 실패했습니다.');
-                }
             });
         }
 
