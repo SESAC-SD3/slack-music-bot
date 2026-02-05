@@ -77,11 +77,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /opt/music-bot
-            echo "GITHUB_REPOSITORY=${{ github.repository }}" >> .env
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker-compose pull
-            docker-compose up -d
-            docker image prune -f
+            sudo grep -q "GITHUB_REPOSITORY" .env || sudo sh -c 'echo "GITHUB_REPOSITORY=${{ github.repository }}" >> .env'
+            echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            sudo docker-compose pull
+            sudo docker-compose up -d
+            sudo docker image prune -f
 
       - name: Setup SSL (first deploy only)
         uses: appleboy/ssh-action@v1.0.3
