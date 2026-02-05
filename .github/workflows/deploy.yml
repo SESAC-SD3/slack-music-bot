@@ -77,7 +77,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /opt/music-bot
-            sudo grep -q "GITHUB_REPOSITORY" .env || sudo sh -c 'echo "GITHUB_REPOSITORY=${{ github.repository }}" >> .env'
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            sudo grep -q "GITHUB_REPOSITORY" .env || sudo sh -c "echo GITHUB_REPOSITORY=${REPO_LOWER} >> .env"
+            sudo sed -i "s|GITHUB_REPOSITORY=.*|GITHUB_REPOSITORY=${REPO_LOWER}|g" .env
             echo "${{ secrets.GHCR_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
             sudo docker-compose pull
             sudo docker-compose up -d
