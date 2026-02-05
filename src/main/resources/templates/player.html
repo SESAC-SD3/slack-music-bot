@@ -691,11 +691,27 @@
         function deleteSong(songId) {
             fetch(`/api/songs/${songId}`, { method: 'DELETE' })
                 .then(response => {
-                    if (response.ok || response.status === 404) {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 404) {
                         refreshPlaylist();
+                        return null;
                     } else {
-                        alert('곡 삭제에 실패했습니다.');
+                        throw new Error('삭제 실패');
                     }
+                })
+                .then(state => {
+                    if (state) {
+                        refreshPlaylist();
+                        if (state.currentSong) {
+                            updateNowPlaying(state.currentSong);
+                        } else {
+                            updateNowPlaying(null);
+                        }
+                    }
+                })
+                .catch(err => {
+                    alert('곡 삭제에 실패했습니다.');
                 });
         }
 

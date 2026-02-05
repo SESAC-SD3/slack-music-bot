@@ -46,7 +46,7 @@ public class SongApiController {
     }
 
     @DeleteMapping("/{songId}")
-    public ResponseEntity<Void> deleteSong(@PathVariable Long songId) {
+    public ResponseEntity<PlayerStateResponse> deleteSong(@PathVariable Long songId) {
         // 현재 재생 중인 곡인지 확인
         PlayerStateResponse state = playerService.getState();
         boolean isCurrentSong = state.getCurrentSongId() != null && state.getCurrentSongId().equals(songId);
@@ -58,6 +58,6 @@ public class SongApiController {
             playerService.next();
         }
 
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(playerService.getState());
     }
 }
