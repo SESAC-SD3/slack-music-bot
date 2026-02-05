@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Bot Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 40px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-shrink: 0;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+
+        .status-dot.connected {
+            background: #44ff44;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            flex-shrink: 0;
+        }
+
+        #youtube-player {
+            width: 100%;
+            height: 100%;
+        }
+
+        .player-controls {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .now-playing-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .song-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .song-info {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .control-btn.play {
+            width: 60px;
+            height: 60px;
+            background: #1db954;
+        }
+
+        .control-btn.play:hover {
+            background: #1ed760;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .settings-section {
+            display: flex;
+            gap: 15px;
+        }
+
+        .add-song-section,
+        .default-video-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            flex: 1;
+        }
+
+        .add-song-section h3,
+        .default-video-section h3 {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 13px;
+            min-width: 0;
+        }
+
+        .input-group input::placeholder {
+            color: #666;
+        }
+
+        .input-group button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #1db954;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .input-group button:hover {
+            background: #1ed760;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .playlist {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .playlist-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .playlist-header span {
+            color: #888;
+            font-weight: normal;
+        }
+
+        .playlist-items {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .playlist-item-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .playlist-item-title {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-item-meta {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .empty-playlist {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .right-panel {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Music Bot Player</h1>
+            <div class="connection-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">연결 중...</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="video-container">
+                    <div id="youtube-player"></div>
+                </div>
+
+                <div class="player-controls">
+                    <div class="now-playing-info">
+                        <div class="song-title" id="currentTitle">재생 중인 곡 없음</div>
+                        <div class="song-info" id="currentInfo">플레이리스트에 곡을 추가해주세요</div>
+                    </div>
+
+                    <div class="controls">
+                        <button class="control-btn" onclick="previous()">⏮</button>
+                        <button class="control-btn play" id="playBtn" onclick="togglePlay()">▶</button>
+                        <button class="control-btn" onclick="next()">⏭</button>
+                    </div>
+
+                    <div class="volume-control">
+                        <span>🔈</span>
+                        <input type="range" class="volume-slider" id="volumeSlider"
+                               min="0" max="100" th:value="${state.volume}" onchange="setVolume(this.value)">
+                        <span>🔊</span>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="add-song-section">
+                        <h3>곡 추가</h3>
+                        <div class="input-group">
+                            <input type="text" id="addSongUrl" placeholder="YouTube URL">
+                            <button onclick="addSong()">추가</button>
+                        </div>
+                    </div>
+
+                    <div class="default-video-section">
+                        <h3>기본 영상</h3>
+                        <div class="input-group">
+                            <input type="text" id="defaultVideoUrl" placeholder="YouTube URL"
+                                   th:value="${state.defaultVideoUrl}">
+                            <button onclick="setDefaultVideo()">저장</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="playlist">
+                    <div class="playlist-header">
+                        플레이리스트 <span>(<span id="songCount" th:text="${#lists.size(songs)}">0</span>곡)</span>
+                    </div>
+                    <div id="playlistContainer" class="playlist-items">
+                        <div th:if="${#lists.isEmpty(songs)}" class="empty-playlist">
+                            플레이리스트가 비어있습니다.<br>
+                            슬랙에서 /music add 명령어로 곡을 추가하세요.
+                        </div>
+                        <div th:each="song : ${songs}" class="playlist-item" th:data-video-id="${song.videoId}">
+                            <img th:src="${song.thumbnailUrl}" alt="thumbnail">
+                            <div class="playlist-item-info">
+                                <div class="playlist-item-title" th:text="${song.title}">Song Title</div>
+                                <div class="playlist-item-meta" th:text="${song.addedBy}">Added by</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let player;
+        let ws;
+        let isPlaying = false;
+        let currentVideoId = null;
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 1,
+                    'rel': 0,
+                    'mute': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log('YouTube Player Ready');
+            connectWebSocket();
+            autoPlayOnLoad();
+
+            document.body.addEventListener('click', function() {
+                if (player && player.isMuted && player.isMuted()) {
+                    player.unMute();
+                    player.setVolume(document.getElementById('volumeSlider').value);
+                }
+            }, { once: true });
+        }
+
+        function autoPlayOnLoad() {
+            fetch('/api/player/state')
+                .then(response => response.json())
+                .then(state => {
+                    console.log('Player state:', state);
+                    document.getElementById('volumeSlider').value = state.volume;
+
+                    let videoIdToPlay = null;
+                    let title = '기본 영상';
+                    let info = '플레이리스트가 비어있습니다';
+
+                    if (state.currentSong) {
+                        videoIdToPlay = state.currentSong.videoId;
+                        title = state.currentSong.title;
+                        info = 'Added by ' + state.currentSong.addedBy;
+                    } else if (state.remainingSongs > 0) {
+                        fetch('/api/player/next', { method: 'POST' })
+                            .then(r => r.json())
+                            .then(newState => {
+                                if (newState.currentSong) {
+                                    player.loadVideoById(newState.currentSong.videoId);
+                                    updateNowPlaying(newState.currentSong);
+                                    isPlaying = true;
+                                    updatePlayButton();
+                                }
+                            });
+                        return;
+                    } else if (state.defaultVideoUrl) {
+                        videoIdToPlay = extractVideoId(state.defaultVideoUrl);
+                    }
+
+                    if (videoIdToPlay) {
+                        console.log('Playing video:', videoIdToPlay);
+                        player.loadVideoById(videoIdToPlay);
+                        currentVideoId = videoIdToPlay;
+                        isPlaying = true;
+                        updatePlayButton();
+                        document.getElementById('currentTitle').textContent = title;
+                        document.getElementById('currentInfo').textContent = info;
+                    }
+                })
+                .catch(err => console.error('Error loading state:', err));
+        }
+
+        function extractVideoId(url) {
+            if (!url) return null;
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            return match ? match[1] : null;
+        }
+
+        function updateNowPlaying(song) {
+            if (song) {
+                document.getElementById('currentTitle').textContent = song.title;
+                document.getElementById('currentInfo').textContent = 'Added by ' + song.addedBy;
+            } else {
+                document.getElementById('currentTitle').textContent = '재생 중인 곡 없음';
+                document.getElementById('currentInfo').textContent = '플레이리스트에 곡을 추가해주세요';
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                fetch('/api/player/next', { method: 'POST' });
+            }
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}/ws/player`);
+
+            ws.onopen = () => {
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('statusText').textContent = '연결됨';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('statusDot').classList.remove('connected');
+                document.getElementById('statusText').textContent = '연결 끊김';
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleCommand(data.command, data.data);
+            };
+        }
+
+        function handleCommand(command, data) {
+            switch (command) {
+                case 'play':
+                    if (data) {
+                        player.loadVideoById(data);
+                        currentVideoId = data;
+                    } else {
+                        player.playVideo();
+                    }
+                    isPlaying = true;
+                    updatePlayButton();
+                    break;
+                case 'pause':
+                    player.pauseVideo();
+                    isPlaying = false;
+                    updatePlayButton();
+                    break;
+                case 'playDefault':
+                    if (data) {
+                        player.loadVideoById(data);
+                        currentVideoId = data;
+                    }
+                    isPlaying = true;
+                    updatePlayButton();
+                    break;
+                case 'volume':
+                    player.setVolume(parseInt(data));
+                    document.getElementById('volumeSlider').value = data;
+                    break;
+                case 'restart':
+                    player.seekTo(0);
+                    player.playVideo();
+                    break;
+                case 'playlistUpdated':
+                    refreshPlaylist();
+                    break;
+            }
+        }
+
+        function refreshPlaylist() {
+            fetch('/api/songs')
+                .then(response => response.json())
+                .then(songs => {
+                    const container = document.getElementById('playlistContainer');
+                    document.getElementById('songCount').textContent = songs.length;
+
+                    if (songs.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-playlist">
+                                플레이리스트가 비어있습니다.<br>
+                                슬랙에서 /music add 명령어로 곡을 추가하세요.
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = songs.map(song => `
+                            <div class="playlist-item" data-video-id="${song.videoId}">
+                                <img src="${song.thumbnailUrl}" alt="thumbnail">
+                                <div class="playlist-item-info">
+                                    <div class="playlist-item-title">${song.title}</div>
+                                    <div class="playlist-item-meta">${song.addedBy}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                });
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                fetch('/api/player/pause', { method: 'POST' });
+            } else {
+                fetch('/api/player/play', { method: 'POST' });
+            }
+        }
+
+        function next() {
+            fetch('/api/player/next', { method: 'POST' });
+        }
+
+        function previous() {
+            fetch('/api/player/previous', { method: 'POST' });
+        }
+
+        function setVolume(value) {
+            fetch('/api/player/volume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ volume: parseInt(value) })
+            });
+        }
+
+        function setDefaultVideo() {
+            const url = document.getElementById('defaultVideoUrl').value;
+            fetch('/api/player/default-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ youtubeUrl: url })
+            });
+        }
+
+        function addSong() {
+            const url = document.getElementById('addSongUrl').value;
+            if (!url) {
+                alert('YouTube URL을 입력해주세요.');
+                return;
+            }
+            fetch('/api/songs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ youtubeUrl: url, addedBy: 'Web Player' })
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('addSongUrl').value = '';
+                } else {
+                    alert('곡 추가에 실패했습니다.');
+                }
+            });
+        }
+
+        function updatePlayButton() {
+            const btn = document.getElementById('playBtn');
+            btn.textContent = isPlaying ? '⏸' : '▶';
+        }
+    </script>
+</body>
+</html>

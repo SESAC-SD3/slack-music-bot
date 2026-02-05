@@ -1,0 +1,18 @@
+# AWS Configuration
+aws_region    = "ap-northeast-2"
+instance_type = "t3.micro"
+key_name      = "your-key-pair-name"
+
+# Application
+app_name = "music-bot"
+
+# Slack Configuration (민감 정보 - 실제 값으로 교체)
+slack_bot_token      = "xoxb-your-bot-token"
+slack_signing_secret = "your-signing-secret"
+
+# Music Bot
+default_video_url = "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+
+# Domain
+domain_name = "example.com"
+subdomain   = "music"
