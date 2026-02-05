@@ -35,6 +35,7 @@ public class PlayerServiceImpl implements PlayerService {
     );
 
     @Override
+    @Transactional
     public PlayerStateResponse getState() {
         PlayerState state = getOrCreatePlayerState();
         return buildResponse(state);
