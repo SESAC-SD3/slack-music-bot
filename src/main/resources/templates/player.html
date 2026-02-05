@@ -302,6 +302,28 @@
             color: #888;
         }
 
+        .playlist-item-delete {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            font-size: 14px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .playlist-item:hover .playlist-item-delete {
+            opacity: 1;
+        }
+
+        .playlist-item-delete:hover {
+            background: rgba(255, 68, 68, 0.4);
+        }
+
         .empty-playlist {
             text-align: center;
             padding: 40px 20px;
@@ -384,12 +406,13 @@
                             플레이리스트가 비어있습니다.<br>
                             슬랙에서 /music add 명령어로 곡을 추가하세요.
                         </div>
-                        <div th:each="song : ${songs}" class="playlist-item" th:data-video-id="${song.videoId}">
+                        <div th:each="song : ${songs}" class="playlist-item" th:data-video-id="${song.videoId}" th:data-song-id="${song.id}">
                             <img th:src="${song.thumbnailUrl}" alt="thumbnail">
                             <div class="playlist-item-info">
                                 <div class="playlist-item-title" th:text="${song.title}">Song Title</div>
                                 <div class="playlist-item-meta" th:text="${song.addedBy}">Added by</div>
                             </div>
+                            <button class="playlist-item-delete" th:onclick="'deleteSong(' + ${song.id} + ')'" title="삭제">✕</button>
                         </div>
                     </div>
                 </div>
@@ -500,7 +523,16 @@
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.ENDED) {
-                fetch('/api/player/next', { method: 'POST' });
+                fetch('/api/player/next', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(state => {
+                        if (state.currentSong) {
+                            updateNowPlaying(state.currentSong);
+                        } else {
+                            updateNowPlaying(null);
+                        }
+                        refreshPlaylist();
+                    });
             }
         }
 
@@ -580,12 +612,13 @@
                         `;
                     } else {
                         container.innerHTML = songs.map(song => `
-                            <div class="playlist-item" data-video-id="${song.videoId}">
+                            <div class="playlist-item" data-video-id="${song.videoId}" data-song-id="${song.id}">
                                 <img src="${song.thumbnailUrl}" alt="thumbnail">
                                 <div class="playlist-item-info">
                                     <div class="playlist-item-title">${song.title}</div>
                                     <div class="playlist-item-meta">${song.addedBy}</div>
                                 </div>
+                                <button class="playlist-item-delete" onclick="deleteSong(${song.id})" title="삭제">✕</button>
                             </div>
                         `).join('');
                     }
@@ -601,7 +634,16 @@
         }
 
         function next() {
-            fetch('/api/player/next', { method: 'POST' });
+            fetch('/api/player/next', { method: 'POST' })
+                .then(response => response.json())
+                .then(state => {
+                    if (state.currentSong) {
+                        updateNowPlaying(state.currentSong);
+                    } else {
+                        updateNowPlaying(null);
+                    }
+                    refreshPlaylist();
+                });
         }
 
         function previous() {
@@ -639,10 +681,22 @@
             .then(response => {
                 if (response.ok) {
                     document.getElementById('addSongUrl').value = '';
+                    refreshPlaylist();
                 } else {
                     alert('곡 추가에 실패했습니다.');
                 }
             });
+        }
+
+        function deleteSong(songId) {
+            fetch(`/api/songs/${songId}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok || response.status === 404) {
+                        refreshPlaylist();
+                    } else {
+                        alert('곡 삭제에 실패했습니다.');
+                    }
+                });
         }
 
         function updatePlayButton() {

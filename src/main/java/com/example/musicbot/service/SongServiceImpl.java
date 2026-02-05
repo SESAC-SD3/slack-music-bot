@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -97,10 +98,19 @@ public class SongServiceImpl implements SongService {
     }
 
     @Override
+    public Optional<SongResponse> findSongById(Long songId) {
+        return songRepository.findById(songId)
+                .map(SongResponse::from);
+    }
+
+    @Override
     @Transactional
     public void deleteSong(Long songId) {
         Song song = findById(songId);
         songRepository.delete(song);
+
+        // 플레이리스트 UI 업데이트
+        webSocketHandler.sendCommand("playlistUpdated", null);
     }
 
     @Override
@@ -115,6 +125,7 @@ public class SongServiceImpl implements SongService {
     public void markAsPlayed(Long songId) {
         Song song = findById(songId);
         song.markAsPlayed();
+        songRepository.saveAndFlush(song);
     }
 
     @Override

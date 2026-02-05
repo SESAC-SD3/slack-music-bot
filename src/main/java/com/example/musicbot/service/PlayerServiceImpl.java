@@ -66,9 +66,11 @@ public class PlayerServiceImpl implements PlayerService {
     public PlayerStateResponse next() {
         PlayerState state = getOrCreatePlayerState();
 
-        // 현재 곡을 재생 완료로 표시
+        // 현재 곡을 재생 완료로 표시 (곡이 존재하는 경우만)
         if (state.getCurrentSongId() != null) {
-            songService.markAsPlayed(state.getCurrentSongId());
+            if (songService.findSongById(state.getCurrentSongId()).isPresent()) {
+                songService.markAsPlayed(state.getCurrentSongId());
+            }
         }
 
         // 다음 곡 가져오기
@@ -82,6 +84,9 @@ public class PlayerServiceImpl implements PlayerService {
             String defaultVideoId = extractVideoId(state.getDefaultVideoUrl());
             webSocketHandler.sendCommand("playDefault", defaultVideoId);
         }
+
+        // 플레이리스트 UI 업데이트
+        webSocketHandler.sendCommand("playlistUpdated", null);
 
         return buildResponse(state);
     }
@@ -133,11 +138,7 @@ public class PlayerServiceImpl implements PlayerService {
     private PlayerStateResponse buildResponse(PlayerState state) {
         SongResponse currentSong = null;
         if (state.getCurrentSongId() != null) {
-            try {
-                currentSong = songService.getSong(state.getCurrentSongId());
-            } catch (BusinessException e) {
-                // 곡이 삭제된 경우 무시
-            }
+            currentSong = songService.findSongById(state.getCurrentSongId()).orElse(null);
         }
 
         long remainingSongs = songService.countUnplayedSongs();

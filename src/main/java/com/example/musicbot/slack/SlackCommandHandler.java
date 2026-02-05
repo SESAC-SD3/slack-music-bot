@@ -49,6 +49,7 @@ public class SlackCommandHandler {
             return switch (subCommand) {
                 case "add" -> handleAdd(ctx, args, userId);
                 case "list" -> handleList(ctx);
+                case "remove", "delete" -> handleRemove(ctx, args);
                 case "play" -> handlePlay(ctx);
                 case "pause" -> handlePause(ctx);
                 case "next" -> handleNext(ctx);
@@ -98,6 +99,40 @@ public class SlackCommandHandler {
         }
 
         return ctx.ack(sb.toString());
+    }
+
+    private Response handleRemove(SlashCommandContext ctx, String args) {
+        if (args.isEmpty()) {
+            return ctx.ack("삭제할 곡 번호를 입력해주세요.\n사용법: `/music remove [번호]`\n`/music list`로 번호를 확인하세요.");
+        }
+
+        try {
+            int index = Integer.parseInt(args);
+            List<SongResponse> songs = songService.getUnplayedSongs();
+
+            if (index < 1 || index > songs.size()) {
+                return ctx.ack("잘못된 번호입니다. 1-" + songs.size() + " 사이의 번호를 입력하세요.");
+            }
+
+            SongResponse songToDelete = songs.get(index - 1);
+            Long songId = songToDelete.getId();
+
+            // 현재 재생 중인 곡인지 확인
+            PlayerStateResponse state = playerService.getState();
+            boolean isCurrentSong = state.getCurrentSongId() != null && state.getCurrentSongId().equals(songId);
+
+            // 곡 삭제
+            songService.deleteSong(songId);
+
+            // 현재 곡이었다면 다음 곡 재생
+            if (isCurrentSong) {
+                playerService.next();
+            }
+
+            return ctx.ack("🗑️ 삭제되었습니다: *" + songToDelete.getTitle() + "*");
+        } catch (NumberFormatException e) {
+            return ctx.ack("번호를 숫자로 입력해주세요.\n사용법: `/music remove [번호]`");
+        }
     }
 
     private Response handlePlay(SlashCommandContext ctx) {
@@ -158,6 +193,7 @@ public class SlackCommandHandler {
 
             `/music add [YouTube URL]` - 곡 추가
             `/music list` - 플레이리스트 보기
+            `/music remove [번호]` - 곡 삭제
             `/music play` - 재생
             `/music pause` - 일시정지
             `/music next` - 다음 곡

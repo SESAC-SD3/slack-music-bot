@@ -5,6 +5,7 @@ import com.example.musicbot.dto.response.SongResponse;
 import com.example.musicbot.entity.Song;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SongService {
 
@@ -15,6 +16,8 @@ public interface SongService {
     List<SongResponse> getUnplayedSongs();
 
     Song findById(Long songId);
+
+    Optional<SongResponse> findSongById(Long songId);
 
     SongResponse getSong(Long songId);
 

@@ -2,6 +2,8 @@ package com.example.musicbot.controller;
 
 import com.example.musicbot.dto.request.SongAddRequest;
 import com.example.musicbot.dto.response.SongResponse;
+import com.example.musicbot.dto.response.PlayerStateResponse;
+import com.example.musicbot.service.PlayerService;
 import com.example.musicbot.service.SongService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.List;
 public class SongApiController {
 
     private final SongService songService;
+    private final PlayerService playerService;
 
     @PostMapping
     public ResponseEntity<SongResponse> addSong(@Valid @RequestBody SongAddRequest request) {
@@ -25,8 +28,8 @@ public class SongApiController {
     }
 
     @GetMapping
-    public ResponseEntity<List<SongResponse>> getAllSongs() {
-        List<SongResponse> songs = songService.getAllSongs();
+    public ResponseEntity<List<SongResponse>> getUnplayedSongsDefault() {
+        List<SongResponse> songs = songService.getUnplayedSongs();
         return ResponseEntity.ok(songs);
     }
 
@@ -44,7 +47,17 @@ public class SongApiController {
 
     @DeleteMapping("/{songId}")
     public ResponseEntity<Void> deleteSong(@PathVariable Long songId) {
+        // 현재 재생 중인 곡인지 확인
+        PlayerStateResponse state = playerService.getState();
+        boolean isCurrentSong = state.getCurrentSongId() != null && state.getCurrentSongId().equals(songId);
+
         songService.deleteSong(songId);
+
+        // 현재 곡이었다면 다음 곡 재생
+        if (isCurrentSong) {
+            playerService.next();
+        }
+
         return ResponseEntity.noContent().build();
     }
 }
