@@ -1,6 +1,8 @@
 package com.example.musicbot.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -12,6 +14,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -20,6 +25,24 @@ public class PlayerWebSocketHandler extends TextWebSocketHandler {
 
     private final CopyOnWriteArraySet<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private ScheduledExecutorService heartbeatExecutor;
+
+    @PostConstruct
+    public void init() {
+        heartbeatExecutor = Executors.newSingleThreadScheduledExecutor();
+        heartbeatExecutor.scheduleAtFixedRate(this::sendHeartbeat, 30, 30, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        if (heartbeatExecutor != null) {
+            heartbeatExecutor.shutdown();
+        }
+    }
+
+    private void sendHeartbeat() {
+        sendCommand("ping", String.valueOf(System.currentTimeMillis()));
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -35,8 +58,16 @@ public class PlayerWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
-        log.info("플레이어로부터 메시지 수신: {}", message.getPayload());
-        // 플레이어로부터 상태 업데이트 등을 받을 수 있음
+        try {
+            Map<String, String> payload = objectMapper.readValue(message.getPayload(), Map.class);
+            String command = payload.get("command");
+
+            if (!"pong".equals(command)) {
+                log.info("플레이어로부터 메시지 수신: {}", message.getPayload());
+            }
+        } catch (IOException e) {
+            log.warn("메시지 파싱 실패: {}", message.getPayload());
+        }
     }
 
     public void sendCommand(String command, String data) {

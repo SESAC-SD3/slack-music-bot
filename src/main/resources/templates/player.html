@@ -415,6 +415,9 @@
         let ws;
         let isPlaying = false;
         let currentVideoId = null;
+        let lastSyncTime = Date.now();
+        let syncInterval = null;
+        let lastKnownSongCount = 0;
 
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
@@ -452,6 +455,13 @@
         }
 
         function autoPlayOnLoad() {
+            // 초기 플레이리스트 곡 수 저장
+            fetch('/api/songs')
+                .then(response => response.json())
+                .then(songs => {
+                    lastKnownSongCount = songs.length;
+                });
+
             fetch('/api/player/state')
                 .then(response => response.json())
                 .then(state => {
@@ -533,6 +543,8 @@
             ws.onopen = () => {
                 document.getElementById('statusDot').classList.add('connected');
                 document.getElementById('statusText').textContent = '연결됨';
+                lastSyncTime = Date.now();
+                startPollingFallback();
             };
 
             ws.onclose = () => {
@@ -541,14 +553,80 @@
                 setTimeout(connectWebSocket, 3000);
             };
 
+            ws.onerror = () => {
+                syncPlaylistState();
+            };
+
             ws.onmessage = (event) => {
+                lastSyncTime = Date.now();
                 const data = JSON.parse(event.data);
                 handleCommand(data.command, data.data);
             };
         }
 
+        function startPollingFallback() {
+            if (syncInterval) clearInterval(syncInterval);
+
+            // 30초마다 상태 확인 (WebSocket 명령을 못 받았을 경우 대비)
+            syncInterval = setInterval(() => {
+                const timeSinceLastSync = Date.now() - lastSyncTime;
+
+                // 45초 이상 WebSocket 메시지가 없으면 동기화
+                if (timeSinceLastSync > 45000) {
+                    syncPlaylistState();
+                }
+            }, 30000);
+        }
+
+        function syncPlaylistState() {
+            // 플레이리스트 상태 동기화
+            fetch('/api/songs')
+                .then(response => response.json())
+                .then(songs => {
+                    const newCount = songs.length;
+
+                    // 곡 수가 변경되었으면 UI 업데이트
+                    if (newCount !== lastKnownSongCount) {
+                        lastKnownSongCount = newCount;
+                        updatePlaylistUI(songs);
+                        fetchAndUpdateNowPlaying();
+                    }
+                })
+                .catch(() => {});
+        }
+
+        function updatePlaylistUI(songs) {
+            const container = document.getElementById('playlistContainer');
+            document.getElementById('songCount').textContent = songs.length;
+
+            if (songs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-playlist">
+                        플레이리스트가 비어있습니다.<br>
+                        슬랙에서 /music add 명령어로 곡을 추가하세요.
+                    </div>
+                `;
+            } else {
+                container.innerHTML = songs.map(song => `
+                    <div class="playlist-item" data-video-id="${song.videoId}" data-song-id="${song.id}">
+                        <img src="${song.thumbnailUrl}" alt="thumbnail">
+                        <div class="playlist-item-info">
+                            <div class="playlist-item-title">${song.title}</div>
+                            <div class="playlist-item-meta">${song.addedBy}</div>
+                        </div>
+                        <button class="playlist-item-delete" onclick="deleteSong(${song.id})" title="삭제">✕</button>
+                    </div>
+                `).join('');
+            }
+        }
+
         function handleCommand(command, data) {
             switch (command) {
+                case 'ping':
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ command: 'pong', data: data }));
+                    }
+                    break;
                 case 'play':
                     if (data) {
                         player.loadVideoById(data);
@@ -605,28 +683,8 @@
             fetch('/api/songs')
                 .then(response => response.json())
                 .then(songs => {
-                    const container = document.getElementById('playlistContainer');
-                    document.getElementById('songCount').textContent = songs.length;
-
-                    if (songs.length === 0) {
-                        container.innerHTML = `
-                            <div class="empty-playlist">
-                                플레이리스트가 비어있습니다.<br>
-                                슬랙에서 /music add 명령어로 곡을 추가하세요.
-                            </div>
-                        `;
-                    } else {
-                        container.innerHTML = songs.map(song => `
-                            <div class="playlist-item" data-video-id="${song.videoId}" data-song-id="${song.id}">
-                                <img src="${song.thumbnailUrl}" alt="thumbnail">
-                                <div class="playlist-item-info">
-                                    <div class="playlist-item-title">${song.title}</div>
-                                    <div class="playlist-item-meta">${song.addedBy}</div>
-                                </div>
-                                <button class="playlist-item-delete" onclick="deleteSong(${song.id})" title="삭제">✕</button>
-                            </div>
-                        `).join('');
-                    }
+                    lastKnownSongCount = songs.length;
+                    updatePlaylistUI(songs);
                 });
         }
 
